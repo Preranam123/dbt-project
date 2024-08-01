@@ -1,0 +1,88 @@
+version: 2
+
+semantic_models:
+  - name: transaction
+    model: ref('fact_transactions')  # References the dbt model named `fact_transactions`
+    description: "Transaction fact table at the transaction level. This table contains one row per transaction and includes the transaction timestamp."
+    defaults:
+      agg_time_dimension: transaction_date
+
+    entities:
+      - name: transaction
+        type: primary
+        expr: transaction_id
+
+      - name: customer
+        type: foreign
+        expr: customer_id
+
+    dimensions:
+      - name: transaction_date
+        type: time
+        type_params:
+          time_granularity: day
+        description: "The date and time when the transaction occurred."
+
+      - name: transaction_location
+        type: categorical
+        expr: order_country
+        description: "The location where the transaction took place."
+
+    measures:
+      - name: transaction_total
+        description: "The total value of the transaction."
+        agg: sum
+        expr: transaction_total
+
+      - name: sales
+        description: "The total sale amount for transactions."
+        agg: sum
+        expr: transaction_total
+
+      - name: median_sales
+        description: "The median value of sales across transactions."
+        agg: median
+        expr: transaction_total
+
+  - name: customers
+    model: ref('dim_customers')  # References the dbt model named `dim_customers`
+    description: "A customer dimension table containing customer details."
+
+    entities:
+      - name: customer
+        type: primary
+        expr: customer_id
+
+    dimensions:
+      - name: first_name
+        type: categorical
+        description: "The first name of the customer."
+
+      - name: last_name
+        type: categorical
+        description: "The last name of the customer."
+
+      - name: signup_date
+        type: time
+        type_params:
+          time_granularity: day
+        description: "The date when the customer signed up."
+
+      - name: email
+        type: categorical
+        description: "Email address of the customer."
+
+    measures:
+      - name: total_customers
+        description: "The total number of customers."
+        agg: count
+        expr: customer_id
+
+      - name: active_customers
+        description: "Number of customers who have signed up in the last 30 days."
+        agg: count
+        expr: customer_id
+        filters:
+          - field: signup_date
+            operator: "after"
+            value: "30 days ago"

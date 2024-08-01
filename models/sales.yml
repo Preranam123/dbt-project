@@ -1,0 +1,90 @@
+version: 2
+
+models:
+  - name: sales
+    description: "This model contains sales data for analysis."
+    columns:
+      - name: order_id
+        description: "Unique identifier for each order."
+        tests:
+          - unique
+          - not_null
+        meta:
+          primary_key: true
+      
+      - name: customer_id
+        description: "Unique identifier for each customer."
+        tests:
+          - not_null
+        meta:
+          foreign_key: true
+          references: customers.customer_id
+
+      - name: order_date
+        description: "Date when the order was placed."
+      
+      - name: amount
+        description: "Total amount of the order."
+        tests:
+          - not_null
+
+    metrics:
+      - name: total_sales
+        description: "Total sales amount across all orders."
+        type: sum
+        expression: "amount"
+        
+      - name: average_order_value
+        description: "Average value of each order."
+        type: average
+        expression: "amount"
+
+      - name: max_order_value
+        description: "Maximum value of an order."
+        type: max
+        expression: "amount"
+
+      - name: min_order_value
+        description: "Minimum value of an order."
+        type: min
+        expression: "amount"
+
+  - name: customers
+    description: "This model contains customer data for analysis."
+    columns:
+      - name: customer_id
+        description: "Unique identifier for each customer."
+        tests:
+          - unique
+          - not_null
+        meta:
+          primary_key: true
+      
+      - name: customer_name
+        description: "Name of the customer."
+
+      - name: signup_date
+        description: "Date when the customer signed up."
+      
+      - name: email
+        description: "Email address of the customer."
+
+    metrics:
+      - name: total_customers
+        description: "Total number of customers."
+        type: count
+        expression: "customer_id"
+        
+      - name: new_customers
+        description: "Number of customers who signed up in the last 30 days."
+        type: count
+        expression: "customer_id"
+        filters:
+          - field: signup_date
+            operator: "after"
+            value: "30 days ago"
+
+      - name: avg_signup_interval
+        description: "Average interval between customer signups."
+        type: average
+        expression: "DATEDIFF(DAY, LAG(signup_date) OVER (ORDER BY signup_date), signup_date)"

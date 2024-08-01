@@ -38,3 +38,91 @@ models:
     +materialized: table
     example:
       +materialized: view
+
+# Adding semantic models configuration
+# Ensure that this section aligns with your version of dbt and any additional plugins you might be using.
+semantic_models:
+  orders:
+    enabled: true
+    group: sales
+    meta:
+      description: "Semantic model for order data"
+    
+    model: ref('schema.orders')
+
+    entities:
+      - name: order_id
+        type: primary
+      - name: customer_id
+        type: foreign
+      - name: store_id
+        type: foreign
+      - name: product_id
+        type: foreign
+
+    measures:
+      - name: order_amount_usd
+        description: "Total USD value of orders"
+        expr: order_amount_usd
+        agg: sum
+
+      - name: order_amount_usd_avg
+        description: "Average USD value of orders"
+        expr: order_amount_usd
+        agg: average
+
+      - name: order_amount_usd_max
+        description: "Maximum USD value of orders"
+        expr: order_amount_usd
+        agg: max
+
+      - name: order_amount_usd_min
+        description: "Minimum USD value of orders"
+        expr: order_amount_usd
+        agg: min
+
+      - name: quick_buy_orders
+        description: "Total orders bought as quick buy"
+        expr: quick_buy_flag
+        agg: sum_boolean
+
+      - name: distinct_orders_count
+        description: "Distinct count of orders"
+        expr: order_id
+        agg: count_distinct
+
+      - name: average_order_value
+        description: "Average value of orders"
+        expr: order_amount_usd
+        agg: average
+
+      - name: valid_order_amount_usd
+        description: "Total USD value of valid orders only"
+        expr: CASE WHEN is_valid = TRUE THEN order_amount_usd ELSE 0 END
+        agg: sum
+
+      - name: p99_order_value
+        description: "The 99th percentile order value"
+        expr: order_amount_usd
+        agg: percentile
+        agg_params:
+          percentile: 0.99
+          use_discrete_percentile: False
+
+      - name: median_order_value
+        description: "The median order value"
+        expr: order_amount_usd
+        agg: median
+
+    dimensions:
+      - name: metric_time
+        type: time
+        expr: date_trunc('day', order_date)
+        type_params:
+          time_granularity: day
+        description: "The date truncated to day for aggregations."
+
+      - name: is_bulk_order
+        type: categorical
+        expr: CASE WHEN quantity > 10 THEN TRUE ELSE FALSE END
+        description: "Categorical flag indicating whether the order is a bulk order."
